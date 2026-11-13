@@ -47,7 +47,7 @@ constexpr int c610_max_angle = 8192;
 int16_t pre_steer_angle[8] = {0};
 int16_t now_steer_angle[8] = {0};
 int16_t diff_steer_angle[8] = {0};
-int16_t goal_steer_angle[8] = {0};
+int32_t goal_steer_angle[8] = {0};
 
 int main()
 {
@@ -139,9 +139,11 @@ int main()
         // printf("%d\n",ps5.lstick_x);
         if(abs(ps5.lstick_x) > 40 && abs(ps5.lstick_y) > 40){
             left_stick_angle = atan2(ps5.lstick_y,ps5.lstick_x) + M_PI;
+            goal_steer_angle[2] = ((left_stick_angle / M_PI * 180) / 360) * 8192 * 36;
         }
         if(abs(ps5.rstick_x) > 40 && abs(ps5.rstick_y) > 40){
             right_stick_angle = atan2(ps5.rstick_y,ps5.rstick_x) + M_PI;
+            goal_steer_angle[3] = ((right_stick_angle / M_PI * 180) / 360) * 8192 * 36;
         }
         if(abs(ps5.lstick_y) > 40){
             left_steer_drive = (hypot(ps5.lstick_x,ps5.lstick_y) / (127 * hypot(1,1))) * 10;
@@ -180,7 +182,7 @@ int main()
             motor_2.SendVelocity(left_steer_drive);
             // printf("%d,%d\n",bl_goal_rpm[2],bl_actu_rpm[2]);
             for(int i = 0; i < 2; i++){
-                c620.set_output(static_cast<int16_t>(pos_pid_calc(0.04,0.69,goal_angle[i+2],bl_actu_rpm[i+2])),i+3);
+                c620.set_output(static_cast<int16_t>(pos_pid_calc(0.04,0.69,goal_steer_angle[i+2] - diff_steer_angle[i+2],bl_actu_rpm[i+2])),i+3);
                 // c620.set_output(static_cast<int16_t>(pids[i].calc(bl_goal_rpm[i + 2],bl_actu_rpm[i + 2],0.01f)),i + 3);
             }
             c620.write();
