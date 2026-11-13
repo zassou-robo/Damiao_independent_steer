@@ -3,6 +3,8 @@
 #include "controler.hpp"
 #include "C620.hpp"
 #include "PID_new.hpp"
+#include "diff_angle_calc.hpp"
+#include "pos_pid.hpp"
 
 // モーター設定
 DM3520::Range motor_range = {
@@ -37,6 +39,12 @@ std::array<Pid, NUM_MOTORS> pids = {{
     Pid({gain_c610, c610_min, c610_max}),
     Pid({gain_c610, c610_min, c610_max})
 }};
+float left_stick_angle = 0;
+float right_stick_angle = 0;
+
+int16_t pre_steer_angle[8] = {0};
+int16_t now_steer_angle[8] = {0};
+int16_t diff_steer_angle[8] = {0};
 
 int main()
 {
@@ -63,6 +71,9 @@ int main()
         }
     }
     c620.read_data();
+    for(int i = 0;i < 8;i ++){
+        pre_steer_angle[i] = c620.get_angle(i + 1);
+    }
 
     printf("Motor Init: OK\r\n");
     printf("Automatic recovery: ENABLED\r\n");
@@ -123,26 +134,32 @@ int main()
 
         // ThisThread::sleep_for(10ms);
         // printf("%d\n",ps5.lstick_x);
+        if(abs(ps5.lstick_x) > 40 && abs(ps5.lstick_y) > 40){
+            left_stick_angle = atan2(ps5.lstick_y,ps5.lstick_x) + M_PI;
+        }
+        if(abs(ps5.rstick_x) > 40 && abs(ps5.rstick_y) > 40){
+            right_stick_angle = atan2(ps5.rstick_y,ps5.rstick_x) + M_PI;
+        }
         if(abs(ps5.lstick_y) > 40){
-            left_steer_drive = ps5.lstick_y / 127 * 10;
+            left_steer_drive = (hypot(ps5.lstick_x,ps5.lstick_y) / (127 * hypot(1,1))) * 10;
         }
         if(abs(ps5.rstick_y) > 40){
-            right_steer_drive = ps5.rstick_y / 127 * 10;
+            right_steer_drive = (hypot(ps5.rstick_x,ps5.rstick_y) / (127 * hypot(1,1))) * 10;
         }
-        if(ps5.r1){
-            bl_goal_rpm[3] = 2000;
-        }else if(ps5.r2 > 40){
-            bl_goal_rpm[3] = -2000;
-        }else{
-            bl_goal_rpm[3] = 0;
-        }
-        if(ps5.l1){
-            bl_goal_rpm[2] = 2000;
-        }else if(ps5.l2 > 40){
-            bl_goal_rpm[2] = -2000;
-        }else{
-            bl_goal_rpm[2] = 0;
-        }
+        // if(ps5.r1){
+        //     bl_goal_rpm[3] = 2000;
+        // }else if(ps5.r2 > 40){
+        //     bl_goal_rpm[3] = -2000;
+        // }else{
+        //     bl_goal_rpm[3] = 0;
+        // }
+        // if(ps5.l1){
+        //     bl_goal_rpm[2] = 2000;
+        // }else if(ps5.l2 > 40){
+        //     bl_goal_rpm[2] = -2000;
+        // }else{
+        //     bl_goal_rpm[2] = 0;
+        // }
         // for(int i = 0; i < 8; i ++){
         //     bl_actu_rpm[i] = c620.get_rpm(i + 1);
         // }
@@ -150,6 +167,8 @@ int main()
             for(int i = 0; i < 8; i++){
                 c620.read_data();
                 bl_actu_rpm[i] = c620.get_rpm(i+1);
+                now_steer_angle[i] = c620.get_angle(i + 1);
+                diff_steer_angle[i] = diff_angle_calc(now_steer_angle[i],pre_steer_angle[i]);
                 // printf("%d   ",bl_actu_rpm[i]);
             }
             printf("\n");
