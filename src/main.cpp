@@ -169,6 +169,7 @@ int main()
                 bl_actu_rpm[i] = c620.get_rpm(i+1);
                 now_steer_angle[i] = c620.get_angle(i + 1);
                 diff_steer_angle[i] = diff_angle_calc(now_steer_angle[i],pre_steer_angle[i]);
+                pre_steer_angle[i] = now_steer_angle[i];
                 // printf("%d   ",bl_actu_rpm[i]);
             }
             printf("\n");
