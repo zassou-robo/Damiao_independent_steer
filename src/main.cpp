@@ -177,7 +177,8 @@ int main()
             motor_2.SendVelocity(left_steer_drive);
             // printf("%d,%d\n",bl_goal_rpm[2],bl_actu_rpm[2]);
             for(int i = 0; i < 2; i++){
-                c620.set_output(static_cast<int16_t>(pids[i].calc(bl_goal_rpm[i + 2],bl_actu_rpm[i + 2],0.01f)),i + 3);
+                c620.set_output(static_cast<int16_t>(pos_pid_calc(0.04,0.69,diff_steer_angle[i+2],bl_actu_rpm[i+2])),i+3);
+                // c620.set_output(static_cast<int16_t>(pids[i].calc(bl_goal_rpm[i + 2],bl_actu_rpm[i + 2],0.01f)),i + 3);
             }
             c620.write();
             pre = now;
